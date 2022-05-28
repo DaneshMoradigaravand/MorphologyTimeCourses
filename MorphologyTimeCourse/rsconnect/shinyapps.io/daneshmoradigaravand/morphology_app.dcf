@@ -1,0 +1,13 @@
+name: morphology_app
+title: morphology_app
+username:
+account: daneshmoradigaravand
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6339578
+bundleId: 5925809
+url: https://daneshmoradigaravand.shinyapps.io/morphology_app/
+when: 1653028360.91323
+lastSyncTime: 1653028360.91324
+asMultiple: FALSE
+asStatic: FALSE
