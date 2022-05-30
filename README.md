@@ -62,9 +62,14 @@ The web application has the following feaatures:
 </p>
 
 1- The user chooses the locus tag for the gene of ineterst. 
-2- The attributes of the locus tag, including the function, the insertaion site and annotation of the mutant. 
+
+2- The attributes of the locus tag, including the function, the insertaion site and annotation of the mutant.
+
 3- The comparative table showing the relative value of the quantified features in comparison to other genes. The abnormality score is the relative anomaly score computed from isolatioon forest. 
-4- The extracte images of the clones over time. 
+
+4- The values of morphology score, biofilm colony size and colony colour intensity over time. The black curve denotes the fitted sigmoid curve from which features in section 3 were extracted.
+
+5- The extracte images of the clones over time. 
 
 ----
 ### Contact <a name="contact"></a>
