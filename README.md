@@ -51,7 +51,7 @@ http://0.0.0.0:3838
 ```
 
 ----
-### Manual <a name="installation"></a>
+### Manual <a name="manual"></a>
 
 The web application has the following feaatures:
 
