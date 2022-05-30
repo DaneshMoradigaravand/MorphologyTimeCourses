@@ -1,16 +1,14 @@
 # MorphologyTimeCourses
 R Shiny application for time course morphology data
 
-# Machine Learning aided Prediction of Plasmid Permsiveness 
+# Timecourse Morpholgy Data Analysis in ***Pseudomonas aeruginosa***  
 
 ## Table of contents
 1. [Citation](#citation)
 2. [Introduction](#content)
 3. [Installation](#installation)
 4. [Manual](#manual)
-5. [Output](#output)
-6. [Supplemental files](#package)
-7. [Contact](#contact)
+5. [Contact](#contact)
 
 ----
 
