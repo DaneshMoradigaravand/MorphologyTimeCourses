@@ -1,6 +1,196 @@
+#compute difference in time series example section manuscript
+library(tidyverse)
+library(sqldf)
+library(Hmisc) 
+library(pheatmap)
+library(tidyverse)
+
+growth<-read_csv("/Users/moradigd/Documents/chemicalgenomic/all.PA.morphology.timepoints_summarised.csv") %>% 
+        group_by(label, timepoint) %>% 
+        summarise(morphology_average=median(morphology.score.fixed.circles)) %>%
+        pivot_wider(names_from =timepoint , values_from = morphology_average) %>% 
+  filter(`44h` >0) %>%
+  arrange(`44h`)
+growth$rank<-seq(dim(growth)[1])
+
+diff_frame_tmp <- growth[-1,4] - growth[-nrow(growth),4]
+growth$diff_frame_39h<- c(NA, diff_frame_tmp$`39h` )
+
+diff_frame_tmp <- growth[-1,5] - growth[-nrow(growth),5]
+growth$diff_frame_44h<- c(NA, diff_frame_tmp$`44h` )
+
+growth_shortened<-growth[which(growth$diff_frame_44h==0),]
+nth_highest<-7
+rank_holder<- which( growth_shortened$diff_frame_39h==sort(growth_shortened$diff_frame_39h, TRUE)[nth_highest])
+rbind(growth_shortened[rank_holder,],growth[growth_shortened$rank[rank_holder]-1,])
+
+#Two distributions 
+growth<-read_csv("/Users/moradigd/Documents/chemicalgenomic/all.PA.morphology.timepoints_summarised.csv") %>% 
+  group_by(label, timepoint) %>% 
+  summarise(morphology_average=median(morphology.score.fixed.circles)) %>%
+  filter(timepoint=="44h")
+
+biofilm_genes<-c("PA14_09480", "PA14_39910","PA14_09470","PA14_42760","PA14_13250", "PA14_13240", "PA14_13230", "PA14_24900", "PA14_13850", "PA14_51410", "PA14_51430", "PA14_24480", "PA14_24490", "PA14_24510", "PA14_24530", "PA14_24550", "PA14_24560",
+                 "PA14_16500",
+                 "PA14_64050",
+                 "PA14_12810",
+                 "PA14_56790",
+                 "PA14_50060",
+                 "PA14_02110",
+                 "PA14_42220",
+                 "PA14_66320",
+                 "PA14_21190",
+                 "PA14_07730",
+                 "PA14_31290",
+                 "PA14_45940",
+                 "PA14_52260",
+                 "PA14_54430",
+                 "PA14_09150",
+                 "PA14_61200","PA14_12530")
+
+genes<-c("phzA", "phzE","phzB","aroC", "moaE", "moaD", "moaC", "moaB", "moaA", "pqsC", "pqsA", "pelA","pelB", "pelD","pelE", "pelF","pelG",
+         "wspR",
+         "gcbA",
+         "rocR",
+         "bifA",
+         "roeA",
+         "siaD",
+         "mucR",
+         "dipA",
+         "nbdA",
+         "rsmA",
+         "lecA",
+         "lasI",
+         "gacS",
+         "algU",
+         "katA",
+         "cdrA","top")
+
+gene_id<-paste0(biofilm_genes,"_",genes)
+
+shortened<-growth[match(biofilm_genes, growth$label),] %>% drop_na()
+
+growth %>%
+  ggplot( aes(x=growth$morphology_average)) +
+ # geom_density(fill="blue") +
+  geom_histogram(fill="blue")+
+  ggplot2::annotate("text", x = shortened$morphology_average, y=1500, label = gene_id[match(shortened$label,biofilm_genes )] , angle = 90)+
+  geom_vline(xintercept = shortened$morphology_average, linetype="dotted", size = 0.3)+
+  geom_vline(xintercept = c(quantile(growth$morphology_average, 0.95), quantile(growth$morphology_average, 0.05)), linetype="solid", col="red", size = 0.3)+
+  #geom_hline(yintercept = 1, linetype="solid", col="black", size = 0.3)+
+  theme_bw()+ 
+  xlim(range(0,300))+
+  ylim(range(0,2000))+
+  ylab("Frequency")+
+  xlab("Morphology at 44h")+
+  theme(axis.text.x = element_text( size=14, angle=45,hjust = 1),
+        axis.text.y = element_text( size=14, hjust = 1),
+        axis.title.x = element_text(color="black", size=16, face="bold"),
+        axis.title.y = element_text(color="black", size=16, face="bold"),
+        strip.text.x = element_text(
+          size = 15, color = "black", face = "bold"
+        ))
+
+
+bonferroni_correction<-function(x, number_of_test){
+  tmp<-length(which(x>growth$morphology_average))/length(growth$morphology_average)
+  tmp<-ifelse(tmp>0.5, (1-tmp), tmp)
+  ifelse(tmp<0.05/number_of_test, "sig", "nonsig")
+}
+bonferroni_correction(shortened$morphology_average[2],1)
+shortened$sig<-sapply(shortened$morphology_average, function(x) bonferroni_correction(x,1))
+shortened$full_label<-gene_id[match(shortened$label, biofilm_genes)]
+
+
+library(edgeR)
+library(gmodels)
+library(tidyverse)
+growth<-read_csv("/Users/moradigd/Documents/chemicalgenomic/colony_colour_new.csv") %>% 
+  select(time_point, gene, value) %>% 
+  group_by(gene, time_point) %>% 
+  summarise(color_average=median(value)) %>%
+  filter(time_point=="44h")
+
+
+shortened<-growth[match(biofilm_genes, growth$gene),] %>% drop_na()
+
+growth %>%
+  ggplot( aes(x=growth$color_average)) +
+  geom_histogram(fill="blue") +
+  ggplot2::annotate("text", x = shortened$color_average, y=3000, label = gene_id[match(shortened$gene,biofilm_genes )] , angle = 90)+
+  geom_vline(xintercept = shortened$color_average, linetype="dotted", size = 0.3)+
+  geom_vline(xintercept = c(quantile(growth$color_average, 0.95), quantile(growth$color_average, 0.05)), linetype="solid", col="red", size = 0.3)+
+  #geom_hline(yintercept = 1, linetype="solid", col="black", size = 0.3)+
+  theme_bw()+ 
+  xlim(range(0,9000000))+
+  ylim(range(0,4000))+
+  ylab("Frequency")+
+  xlab("Morphology at 44h")+
+  theme(axis.text.x = element_text( size=14, angle=45,hjust = 1),
+        axis.text.y = element_text( size=14, hjust = 1),
+        axis.title.x = element_text(color="black", size=16, face="bold"),
+        axis.title.y = element_text(color="black", size=16, face="bold"),
+        strip.text.x = element_text(
+          size = 15, color = "black", face = "bold"
+        ))
+
+####################################
+#Build the placeholder
+library(RSQL) 
+library(RSQLite)
+library(tidyverse)
+library(DBI)
+
+growth<-read_csv("/Users/moradigd/Documents/chemicalgenomic/all.PA.morphology.timepoints.csv") 
+con <- dbConnect(drv = RSQLite::SQLite(), dbname = ":memory:")
+dbWriteTable(conn = con, name = "growth", value = growth)
+
+tmp<-dbGetQuery(con,"SELECT [PA14.ID], timepoint, AVG([morphology.score.fixed.circles]) AS average_morphology, VARIANCE([morphology.score.fixed.circles]) AS variance_morphology, VARIANCE([colony.size]) AS variance_colony_size ,  AVG([colony.size]) AS average_colony_size, COUNT(*) AS replicas
+           FROM growth
+           GROUP BY [PA14.ID],timepoint 
+           ")
+dbWriteTable(conn = con, name = "tmp", value = tmp, overwrite=T)
+
+tmp<-dbGetQuery(con,"SELECT *, variance_morphology/replicas AS average_variance_morphology_per_replica,  variance_colony_size/replicas AS average_variance_colony_size_per_replica 
+           FROM tmp
+           ORDER BY average_variance_morphology_per_replica  DESC
+           ")
+dbWriteTable(conn = con, name = "tmp", value = tmp, overwrite=T)
+
+df_colour<-read_csv("/Users/moradigd/Documents/chemicalgenomic/colony_colour_new.csv") 
+dbWriteTable(conn = con, name = "df_colour", value = df_colour)
+tmp1<-dbGetQuery(con,"SELECT gene, time_point, AVG([value]) AS average_colony_colour, VARIANCE([value]) AS variance_colony_colour, COUNT(*) AS replicas
+           FROM df_colour
+           GROUP BY gene,time_point 
+           ")
+dbWriteTable(conn = con, name = "tmp1", value = tmp1, overwrite=T)
+tmp1<-dbGetQuery(con,"SELECT *, variance_colony_colour/replicas AS average_variance_colony_colour_per_replica
+           FROM tmp1
+           ORDER BY average_variance_colony_colour_per_replica  DESC
+           ")
+dbWriteTable(conn = con, name = "tmp1", value = tmp1, overwrite=T)
+
+dbExecute(con,"DROP TABLE temp_table")
+dbExecute(con,"CREATE TABLE temp_table AS
+               SELECT *, [PA14.ID] As gene  
+               FROM tmp
+          ")
+dbExecute(con,"ALTER TABLE temp_table
+           DROP COLUMN [PA14.ID]")
+dbExecute(con,"SELECT * FROM temp_table
+            INNER JOIN tmp1 
+            ON temp_table.gene= tmp1.gene
+           ")
+tmp3<-dbGetQuery(con,"SELECT * FROM temp_table")
+#write_csv(tmp3, "/Users/moradigd/Documents/chemicalgenomic/summary_table_time_points.csv" )
+
+
+
+####################################
+
 load("/Users/moradigd/Documents/Plasmid/BioInfProject/Data/abundetc.RData", ex <- new.env())
 ls() #returns a list of all the objects you just loaded (and anything else in your environment)
-write.csv(theItemOfInterestFromYourDRadataFileAsThereMayBeMoreThanOneThingInthere,file="/Users/moradigd/Documents/Plasmid/yourCSV.csv")
+
 
 #Correlation
 library(tidyverse)
@@ -3623,7 +3813,7 @@ biofilm_genes<-c("PA14_09480", "PA14_39910","PA14_09470","PA14_42760","PA14_1325
                  "PA14_52260",
                  "PA14_54430",
                  "PA14_09150",
-                 "PA14_61200","PA14_12530")
+                 "PA14_61200")
 
 genes<-c("phzA", "phzE","phzB","aroC", "moaE", "moaD", "moaC", "moaB", "moaA", "pqsC", "pqsA", "pelA","pelB", "pelD","pelE", "pelF","pelG",
          "wspR",
@@ -3641,7 +3831,7 @@ genes<-c("phzA", "phzE","phzB","aroC", "moaE", "moaD", "moaC", "moaB", "moaA", "
          "gacS",
          "algU",
          "katA",
-         "cdrA","top")
+         "cdrA")
 
 #df<-data.frame(list(gene=genes, llocud_is=biofilm_genes))
 #write_csv(df,"/Users/moradigd/Documents/chemicalgenomic/biofilm_genes.csv" )
@@ -3679,6 +3869,44 @@ row.names(properties_quant_short)
 
 dim(properties_quant_short)
 
+
+#distribution of variance 
+library(tidyverse)
+input<-read_csv("/Users/moradigd/Documents/chemicalgenomic/PAmorphology.csv",show_col_types = FALSE)
+frequency<-data.frame(table(input$PA14.ID)/6) 
+
+properties<-read_csv("/Users/moradigd/Documents/chemicalgenomic/new_Growth_properties_morphology.csv")
+abnormality<-read_csv("/Users/moradigd/Documents/chemicalgenomic/abnormality_morphology.csv")
+properties$abnormality<-abnormality$percentage[match(properties$`locus id`, abnormality$tag)]
+properties<-properties[!is.na(properties$R_squared),] %>% select(`locus id`,R_squared )
+properties<-inner_join(properties,frequency, by=c(`locus id`="Var1") )
+properties$R_squared<-properties$R_squared/properties$Freq
+
+shortened<-properties[match(biofilm_genes,properties$`locus id`),] %>% drop_na()
+shortened$tag<-gene_id[match(shortened$`locus id`,biofilm_genes)] 
+
+properties %>%
+  ggplot( aes(x=log(R_squared))) +
+  geom_histogram(fill="blue") +
+  ggplot2::annotate("text", x = log(shortened$R_squared), y=500, label = shortened$tag, angle = 90)+
+  geom_vline(xintercept = log(shortened$R_squared), linetype="dotted", size = 0.3)+
+  geom_vline(xintercept = c(log(quantile(properties$R_squared, 0.95)), log(quantile(properties$R_squared, 0.05))), linetype="solid", col="red", size = 0.3)+
+  #geom_hline(yintercept = 1, linetype="solid", col="black", size = 0.3)+
+  theme_bw()+ 
+  ylim(range(0,1500))+
+  ylab("Frequency")+
+  xlab("R squared")+
+  theme(axis.text.x = element_text( size=14, angle=45,hjust = 1),
+        axis.text.y = element_text( size=14, hjust = 1),
+        axis.title.x = element_text(color="black", size=16, face="bold"),
+        axis.title.y = element_text(color="black", size=16, face="bold"),
+        strip.text.x = element_text(
+          size = 15, color = "black", face = "bold"
+        ))+ 
+  scale_x_continuous(labels = scales::comma)+ scale_x_continuous(labels = scales::comma)
+
+
+
 #distribution 
 library(tidyverse)
 properties<-read_csv("/Users/moradigd/Documents/chemicalgenomic/new_Growth_properties_morphology.csv")
@@ -3693,6 +3921,7 @@ shortened<-properties[match(biofilm_genes,properties$`locus id`),]
 shortened$tag<-gene_id[match(shortened$`locus id`,biofilm_genes)]
 shortened<-shortened[!is.na(shortened$abnormality),]
 shortened$`growth rate`
+
 
 properties %>%
   ggplot( aes(x=abnormality)) +
